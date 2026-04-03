@@ -1,5 +1,8 @@
 import { pool } from '../db/db.js'
 import { z } from 'zod'
+import { logQueue } from '../../queue.js'
+import { redis } from '../../redis.js'
+import { cache } from 'react'
 
 const logSchema = z.object({
     service: z.string().min(1),
@@ -11,11 +14,14 @@ export const addLog = async (req, res) => {
 
     try {
         const data = logSchema.parse(req.body)
-        const result = await pool.query(
-            "INSERT INTO logs (service, level, message) VALUES ($1, $2, $3) RETURNING *",
-            [data.service, data.level, data.message]
-        )
-        res.json(result.rows[0])
+        await logQueue.add("log-job", data, {
+            attempts: 3,
+            backoff: {
+                type: "exponential",
+                delay: 1000,
+            },
+        })
+        res.json({ message: "Log added to queue" })
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
@@ -25,6 +31,18 @@ export const getLogs = async (req, res) => {
     try {
         const { level, page = 1, limit = 10 } = req.query;
 
+        const cacheKey = `logs:${level || "all"}:${page}:${limit}`
+
+        // 1. Check Cache 
+        const cachedData = await redis.get(cacheKey)
+        if (cachedData) {
+            console.log("Cache Hit")
+            return res.json(JSON.parse(cachedData))
+        }
+
+        console.log("Cache MISS")
+
+        // 2. DB Query
         const offset = (page - 1) * limit;
 
         let query = "SELECT * FROM logs";
@@ -45,6 +63,7 @@ export const getLogs = async (req, res) => {
 
         const result = await pool.query(query, values);
 
+        await redis.set(cacheKey, JSON.stringify(result.rows), "EX", 60)
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });

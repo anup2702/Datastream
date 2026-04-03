@@ -1,13 +1,14 @@
-# 🚀 Distributed Log Processing System (WIP)
+# 🚀 Datastream (Distributed Log Processing System)
 
-A backend system designed to collect, store, and retrieve application logs efficiently with support for filtering, pagination, and query optimization.
+A scalable backend system designed to collect, process, and retrieve application logs efficiently using queue-based architecture, caching, and optimized database queries.
 
 ---
 
 ## 📌 Overview
 
-This project simulates a real-world logging system where multiple services send logs to a centralized backend.
-The system is designed with scalability in mind and will evolve into a distributed architecture with queues and cloud deployment.
+Datastream simulates a real-world logging system where multiple services send logs to a centralized backend.
+
+The system is designed with scalability and performance in mind, evolving from a simple API → to a distributed architecture with queues, workers, and caching.
 
 ---
 
@@ -19,6 +20,10 @@ The system is designed with scalability in mind and will evolve into a distribut
 * ✅ Filtering logs by level (error, info, warn)
 * ✅ Pagination (page & limit)
 * ✅ Database indexing for performance optimization
+* ✅ Queue-based log processing (BullMQ)
+* ✅ Background worker for async DB writes
+* ✅ Retry mechanism for failed jobs
+* ✅ Redis caching for faster read performance
 
 ---
 
@@ -26,6 +31,8 @@ The system is designed with scalability in mind and will evolve into a distribut
 
 * **Backend:** Node.js, Express
 * **Database:** PostgreSQL (Supabase)
+* **Queue:** BullMQ
+* **Cache:** Redis
 * **Validation:** Zod
 * **Tools:** Postman, Git
 
@@ -39,6 +46,8 @@ src/
  ├── routes/
  ├── services/
  ├── db/
+ ├── queue/
+ ├── worker/
  └── index.js
 ```
 
@@ -62,6 +71,8 @@ POST /api/log
 }
 ```
 
+👉 Logs are pushed to a queue and processed asynchronously by a worker.
+
 ---
 
 ### ➤ Get Logs
@@ -83,6 +94,8 @@ GET /api/logs
 ```
 GET /api/logs?level=error&page=1&limit=5
 ```
+
+👉 Uses Redis caching for faster repeated queries.
 
 ---
 
@@ -109,31 +122,47 @@ CREATE INDEX idx_logs_created_at ON logs(created_at DESC);
 
 ---
 
-## 🧠 System Design (Current)
+## 🧠 System Design (Current Architecture)
 
 ```
-Client → API → PostgreSQL
+Client → API → Redis (Cache)
+                ↓
+             Queue (BullMQ)
+                ↓
+             Worker → PostgreSQL
 ```
+
+---
+
+## 🔄 How It Works
+
+1. Client sends log → API
+2. API pushes log to queue
+3. Worker processes job asynchronously
+4. Log stored in PostgreSQL
+5. Fetch API uses Redis cache for faster reads
 
 ---
 
 ## 🚧 Upcoming Features
 
-* 🔄 Message Queue (Kafka / BullMQ)
-* ⚙️ Background Workers
-* ⚡ Redis Caching
-* ☁️ Cloud Deployment (AWS)
-* 📊 Dashboard (React)
-* 🚨 Alert System
+* ☁️ Cloud deployment (AWS)
+* 📊 Monitoring & metrics (logs/sec)
+* 📈 Dashboard (React)
+* 🚨 Alert system (error spikes)
+* 🧩 Dead letter queue (failed jobs handling)
 
 ---
 
 ## 🧠 Key Learnings
 
 * Importance of input validation (Zod)
-* Efficient API design with filtering & pagination
-* Database indexing for performance optimization
-* Structuring backend with controllers & services
+* API design with filtering & pagination
+* Database indexing and query optimization
+* Event-driven architecture using queues
+* Async processing with workers
+* Caching strategies using Redis
+* Handling failures with retries
 
 ---
 
@@ -143,7 +172,7 @@ Client → API → PostgreSQL
 
 ```
 git clone <your-repo-link>
-cd log-system
+cd Datastream
 ```
 
 ### 2. Install dependencies
@@ -156,12 +185,17 @@ npm install
 
 ```
 DB_URL=your_postgres_connection_string
+REDIS_URL=your_redis_connection_string
 ```
 
-### 4. Run server
+### 4. Run services
 
-```
+```bash
+# Start backend
 npm run dev
+
+# Start worker (separate terminal)
+node worker.js
 ```
 
 ---
@@ -172,6 +206,6 @@ npm run dev
 
 ---
 
-## ⭐ Future Goal
+## ⭐ Vision
 
-To evolve this system into a **distributed, scalable log processing platform** similar to Datadog or ELK stack.
+To evolve Datastream into a **production-grade distributed log processing system** similar to Datadog / ELK stack with real-time analytics and scalable cloud infrastructure.
