@@ -69,3 +69,19 @@ export const getLogs = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+
+export const getMetrices = async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT
+            DATE_TRUNC('minute', created_at) AS minute,
+            COUNT(*) AS log_count
+            FROM logs
+            GROUP BY minute
+            ORDER BY minute DESC
+            `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
