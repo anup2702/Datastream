@@ -1,8 +1,7 @@
 import { Queue } from 'bullmq'
 import IORedis from 'ioredis'
-import { Connection } from 'pg'
 
-const connection = new IORedis({ maxRetriesPerRequest: null })
+const connection = new IORedis(process.env.UPSTASH_REDIS_URL, { maxRetriesPerRequest: null })
 
 export const logQueue = new Queue("logQueue", {
     connection,

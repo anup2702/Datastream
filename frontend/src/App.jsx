@@ -6,11 +6,13 @@ function App() {
   const [logs, setLogs] = useState([])
 
   const fetchLogs = (level) => {
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
     const url = level
-      ? `http://localhost:3000/api/logs?level=${level}`
-      : "http://localhost:3000/api/logs";
+      ? `${API_URL}/api/logs?level=${level}`
+      : `${API_URL}/api/logs`;
     axios.get(url)
       .then(res => setLogs(res.data))
+      .catch(console.error);
   }
 
   useEffect(() => {

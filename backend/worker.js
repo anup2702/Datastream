@@ -3,7 +3,7 @@ import { Worker } from "bullmq";
 import IORedis from 'ioredis'
 import { pool } from "./src/db/db.js";
 
-const connection = new IORedis({ maxRetriesPerRequest: null })
+const connection = new IORedis(process.env.UPSTASH_REDIS_URL, { maxRetriesPerRequest: null })
 
 const worker = new Worker("logQueue", async (job) => {
     const { service, level, message } = job.data
